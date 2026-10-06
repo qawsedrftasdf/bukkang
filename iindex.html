@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>부캉이의 플래피 버디 (Flappy Birdie)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&family=Gamja+Flower&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #a8edd9 0%, #78ffd6 100%);
+            font-family: 'Jua', sans-serif, system-ui;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #333;
+        }
+
+        #game-wrapper {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 720px;
+            background-color: #38bdf8;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 10px rgba(255, 255, 255, 0.4);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            pointer-events: auto;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none !important;
+        }
+
+        /* Start Screen */
+        #start-screen {
+            background: rgba(14, 116, 144, 0.82);
+            backdrop-filter: blur(4px);
+        }
+
+        .title-container {
+            margin-bottom: 24px;
+            animation: float 2.5s ease-in-out infinite;
+        }
+
+        .game-title {
+            font-size: 3.2rem;
+            color: #ffe100;
+            text-shadow: 3px 3px 0px #333, -3px -3px 0px #333, 3px -3px 0px #333, -3px 3px 0px #333, 0px 6px 12px rgba(0,0,0,0.3);
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #ffffff;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+            margin-top: 4px;
+        }
+
+        .bird-preview {
+            width: 90px;
+            height: 90px;
+            margin: 12px auto;
+            filter: drop-shadow(0 6px 10px rgba(0,0,0,0.25));
+            animation: bounce 1.2s ease-in-out infinite alternate;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bird-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .start-btn {
+            background: linear-gradient(180deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+            background: #ff5e7e;
+            color: white;
+            border: 4px solid #fff;
+            padding: 16px 36px;
+            font-size: 1.6rem;
+            font-family: 'Jua', sans-serif;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 8px 15px rgba(255, 94, 126, 0.4), inset 0 -4px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+            margin-top: 10px;
+        }
+
+        .start-btn:active {
+            transform: translateY(3px) scale(0.98);
+            box-shadow: 0 4px 8px rgba(255, 94, 126, 0.4), inset 0 -1px 0 rgba(0,0,0,0.2);
+        }
+
+        .instruction-box {
+            margin-top: 24px;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 16px;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            color: #0f172a;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            line-height: 1.5;
+        }
+
+        .key-badge {
+            background: #eee;
+            border: 1px solid #ccc;
+            border-bottom-width: 3px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        #hud {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 24px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .score-display {
+            font-size: 3.5rem;
+            color: #ffffff;
+            text-shadow: 3px 3px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            width: 100%;
+            text-align: center;
+        }
+
+        .sound-btn {
+            position: absolute;
+            right: 16px;
+            top: 16px;
+            background: rgba(255, 255, 255, 0.8);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            pointer-events: auto;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 6;
+        }
+
+        #gameover-screen {
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+        }
+
+        .card {
+            background: #ffffff;
+            border-radius: 28px;
+            padding: 28px 24px;
+            width: 85%;
+            max-width: 320px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+            border: 4px solid #ffe100;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .gameover-title {
+            font-size: 2.2rem;
+            color: #ff4757;
+            margin-bottom: 12px;
+            text-shadow: 1px 1px 0 #333;
+        }
+
+        .score-board {
+            background: #f8f9fa;
+            border-radius: 16px;
+            padding: 16px;
+            margin: 16px 0;
+            border: 2px stroke #e9ecef;
+        }
+
+        .score-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            font-size: 1.2rem;
+        }
+
+        .score-label {
+            color: #666;
+        }
+
+        .score-val {
+            font-size: 1.6rem;
+            color: #2ed573;
+            font-weight: bold;
+        }
+
+        .score-val.high {
+            color: #ffa502;
+        }
+
+        .badge-tag {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 12px;
+            background: #eccc68;
+            color: #2f3542;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .retry-btn {
+            background: #2ed573;
+            color: white;
+            border: 3px solid #fff;
+            padding: 14px 30px;
+            font-size: 1.4rem;
+            font-family: 'Jua', sans-serif;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(46, 213, 115, 0.4), inset 0 -3px 0 rgba(0,0,0,0.2);
+            transition: transform 0.1s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .retry-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* 난이도 선택 버튼 스타일 */
+        .diff-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin: 12px 0;
+            width: 100%;
+        }
+
+        .diff-btn {
+            flex: 1;
+            padding: 8px 12px;
+            font-size: 1rem;
+            font-family: 'Jua', sans-serif;
+            border: 2px solid #cbd5e1;
+            background: #f1f5f9;
+            color: #64748b;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .diff-btn.active[data-diff="easy"] {
+            background: #2ed573;
+            color: white;
+            border-color: #2ed573;
+            box-shadow: 0 4px 10px rgba(46, 213, 115, 0.3);
+        }
+
+        .diff-btn.active[data-diff="hard"] {
+            background: #ff4757;
+            color: white;
+            border-color: #ff4757;
+            box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3);
+        }
+
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes bounce {
+            0% { transform: translateY(0) scale(1); }
+            100% { transform: translateY(-15px) scale(1.05); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.7); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-wrapper">
+        <button id="sound-btn" class="sound-btn" title="음소거 토글">🔊</button>
+        
+        <!-- Canvas for rendering game graphics -->
+        <canvas id="gameCanvas"></canvas>
+
+        <!-- HUD display -->
+        <div id="hud">
+            <div id="current-score" class="score-display">0</div>
+        </div>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="overlay">
+            <div class="title-container">
+                <h1 class="game-title">부캉이의 플래피 버디</h1>
+                <p class="subtitle">쉬는 시간에 즐기는 바닷속 한판!</p>
+            </div>
+
+            <div class="bird-preview">
+                <span style="font-size: 72px; transform: scaleX(-1); display: inline-block;">🦈</span>
+            </div>
+
+            <!-- 시작 화면 난이도 토글 -->
+            <div class="diff-container" id="start-diff-container">
+                <button class="diff-btn active" data-diff="easy">🌱 쉬움</button>
+                <button class="diff-btn" data-diff="hard">🔥 어려움</button>
+            </div>
+
+            <button id="start-btn" class="start-btn">게임 시작</button>
+
+            <div class="instruction-box">
+                <p>👉 <span class="key-badge">스페이스바</span> 또는 <span class="key-badge">화면 클릭</span>으로 헤엄치세요!</p>
+                <p style="margin-top: 4px; font-size: 0.85rem; color: #d97706; font-weight: bold;">🪙 위험을 감수하고 황금 코인을 먹으면 +3점 획득!</p>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameover-screen" class="overlay hidden">
+            <div class="card">
+                <h2 class="gameover-title">GAME OVER</h2>
+                <p id="rank-title" class="badge-tag">바닷속 헤엄꾼</p>
+                
+                <div class="score-board">
+                    <div class="score-item">
+                        <span class="score-label">이번 점수</span>
+                        <span id="final-score" class="score-val">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">🌱 쉬움 최고</span>
+                        <span id="best-score-easy" class="score-val high">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span class="score-label">🔥 어려움 최고</span>
+                        <span id="best-score-hard" class="score-val high">0</span>
+                    </div>
+                </div>
+
+                <!-- 게임오버 화면 난이도 토글 -->
+                <div class="diff-container" id="gameover-diff-container">
+                    <button class="diff-btn active" data-diff="easy">🌱 쉬움</button>
+                    <button class="diff-btn" data-diff="hard">🔥 어려움</button>
+                </div>
+
+                <button id="retry-btn" class="retry-btn">다시 하기 🔄</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Element References
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const startBtn = document.getElementById('start-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const scoreDisplay = document.getElementById('current-score');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const bestScoreEasyDisplay = document.getElementById('best-score-easy');
+        const bestScoreHardDisplay = document.getElementById('best-score-hard');
+        const rankTitleDisplay = document.getElementById('rank-title');
+        const soundBtn = document.getElementById('sound-btn');
+
+        let gameOverTimeout = null; // 게임오버 UI 지연 타이머 관리 변수
+
+        // Responsive Resolution Configuration
+        let CANVAS_WIDTH = 420;
+        let CANVAS_HEIGHT = 720;
+
+        function resizeCanvas() {
+            const wrapper = document.getElementById('game-wrapper');
+            CANVAS_WIDTH = wrapper.clientWidth;
+            CANVAS_HEIGHT = wrapper.clientHeight;
+            canvas.width = CANVAS_WIDTH;
+            canvas.height = CANVAS_HEIGHT;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let soundEnabled = true;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled || !audioCtx) return;
+
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'jump') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.12);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.12);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+                } else if (type === 'score') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                    osc.start(now);
+                    osc.stop(now + 0.2);
+                } else if (type === 'coin') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(987.77, now); // B5
+                    osc.frequency.setValueAtTime(1318.51, now + 0.08); // E6
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+                    osc.start(now);
+                    osc.stop(now + 0.25);
+                }
+            } catch (e) {
+                console.log('Audio playback error', e);
+            }
+        }
+
+        soundBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            soundEnabled = !soundEnabled;
+            soundBtn.textContent = soundEnabled ? '🔊' : '🔇';
+        });
+
+        const STATES = { START: 0, PLAYING: 1, GAMEOVER: 2 };
+        let gameState = STATES.START;
+
+        let score = 0;
+        // 난이도별 최고 기록 관리 (기존 저장 기록과의 호환성 유지)
+        let bestScoreEasy = parseInt(localStorage.getItem('flappy_birdie_best_easy')) || parseInt(localStorage.getItem('flappy_birdie_best')) || 0;
+        let bestScoreHard = parseInt(localStorage.getItem('flappy_birdie_best_hard')) || 0;
+        let frames = 0;
+        let currentDifficulty = 'easy'; // 기본 난이도: 쉬움
+
+        // 난이도 설정 함수
+        function setDifficulty(diff) {
+            currentDifficulty = diff;
+            
+            // 모든 난이도 버튼 UI 업데이트
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                if (btn.getAttribute('data-diff') === diff) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // 난이도별 물리 및 장애물 속성 설정 (중력을 약간 높여 하단 코인 획득 및 세밀한 고도 조절이 수월하도록 개선)
+            if (diff === 'easy') {
+                bird.gravity = 0.38;     // 적절히 작용하는 중력으로 빠르게 낙하 가능
+                bird.jumpVelocity = -7.2; // 보정된 반응형 도약력
+                pipes.gap = 210;         // 훨씬 넓어진 위아래 통과 틈새
+                pipes.baseSpeed = 1.7;   // 여유롭고 천천히 이동
+            } else if (diff === 'hard') {
+                bird.gravity = 0.45;     // 더 스릴 있는 중력 반응
+                bird.jumpVelocity = -7.8;
+                pipes.gap = 150;         // 타이트한 틈새 (기존 165px -> 150px로 살짝 더 축소)
+                pipes.baseSpeed = 2.3;   // 적당한 스릴
+            }
+        }
+
+        // 난이도 버튼 이벤트 리스너 연결
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const diff = btn.getAttribute('data-diff');
+                setDifficulty(diff);
+            });
+        });
+
+        // Bird settings
+        const bird = {
+            x: 80,
+            y: 250,
+            radius: 20,
+            gravity: 0.38,
+            jumpVelocity: -7.2,
+            velocity: 0,
+            rotation: 0,
+            wingAngle: 0,
+            wingSpeed: 0.25,
+
+            reset() {
+                this.y = CANVAS_HEIGHT / 2 - 20;
+                this.velocity = 0;
+                this.rotation = 0;
+            },
+
+            flap() {
+                this.velocity = this.jumpVelocity;
+                playSound('jump');
+            },
+
+            update() {
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+
+                // Rotation calculated based on vertical velocity
+                this.rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 6, this.velocity * 0.08));
+
+                // Wing flap animation frame update
+                this.wingAngle += this.wingSpeed;
+
+                // Ceiling boundary check
+                if (this.y - this.radius < 0) {
+                    this.y = this.radius;
+                    this.velocity = 0;
+                }
+            },
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                // Flip horizontally so the shark faces forward (right)
+                ctx.scale(-1, 1);
+                ctx.font = '46px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('🦈', 0, 2);
+
+                ctx.restore();
+            }
+        };
+
+        const coins = {
+            list: [],
+
+            reset() {
+                this.list = [];
+            },
+
+            // 코인이 장애물(파이프) 내부나 너무 가까운 위치에 겹치는지 검사하는 함수
+            isInsidePipe(coinX, coinY, radius = 15) {
+                const margin = 12; // 파이프와의 안전 여유 거리
+                for (let p of pipes.list) {
+                    // 코인의 X 좌표 범위가 파이프 X 영역(+여백)과 겹치는지 체크
+                    if (coinX + radius + margin > p.x && coinX - radius - margin < p.x + pipes.width) {
+                        // 상단 파이프 기둥 내부 검사
+                        if (coinY - radius - margin < p.topGapY) {
+                            return true;
+                        }
+                        // 하단 파이프 기둥 내부 검사
+                        if (coinY + radius + margin > p.topGapY + pipes.gap) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            },
+
+            spawn(pipe, currentInterval) {
+                // 70% 확률로 코인 생성
+                if (Math.random() < 0.70) {
+                    const rnd = Math.random();
+                    const coinRadius = 15;
+
+                    let coinX, coinY;
+
+                    if (rnd < 0.5) {
+                        // 새로 생성된 파이프의 틈새 중앙 (화면 오른쪽 끝 스폰 위치)
+                        coinX = pipe.x + pipes.width / 2;
+                        coinY = pipe.topGapY + pipes.gap / 2;
+                    } else {
+                        // 파이프와 파이프 사이의 빈 공간 (화면 우측 밖 영역)
+                        const horizontalDistance = pipes.speed * currentInterval;
+                        coinX = pipe.x + horizontalDistance / 2;
+
+                        if (rnd < 0.75) {
+                            coinY = (CANVAS_HEIGHT - background.groundHeight) / 2;
+                        } else {
+                            // 틈새 주변 자유 고도
+                            coinY = pipe.topGapY + pipes.gap / 2 + (Math.random() > 0.5 ? 35 : -35);
+                        }
+                    }
+
+                    // 코인 위치가 장애물 내부이거나 겹치면 생성을 취소함
+                    if (this.isInsidePipe(coinX, coinY, coinRadius)) {
+                        return;
+                    }
+
+                    this.list.push({
+                        x: coinX,
+                        y: coinY,
+                        radius: coinRadius,
+                        collected: false,
+                        bobAngle: Math.random() * Math.PI * 2
+                    });
+                }
+            },
+
+            update() {
+                for (let i = this.list.length - 1; i >= 0; i--) {
+                    const c = this.list[i];
+                    c.x -= pipes.speed;
+                    c.bobAngle += 0.08;
+
+                    // 플레이어 상어와 충돌 판정
+                    if (!c.collected && gameState === STATES.PLAYING) {
+                        const dx = bird.x - c.x;
+                        const dy = bird.y - (c.y + Math.sin(c.bobAngle) * 4);
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < bird.radius + c.radius) {
+                            c.collected = true;
+                            score += 3; // +3점 증가
+                            scoreDisplay.textContent = score;
+                            playSound('coin');
+                            createCoinParticles(c.x, c.y);
+                            addFloatingText(c.x, c.y, '+3');
+                        }
+                    }
+
+                    // 화면 밖으로 나가거나 먹은 코인 제거
+                    if (c.x < -30 || c.collected) {
+                        this.list.splice(i, 1);
+                    }
+                }
+            },
+
+            draw() {
+                for (let c of this.list) {
+                    if (c.collected) continue;
+
+                    const renderY = c.y + Math.sin(c.bobAngle) * 4;
+
+                    ctx.save();
+                    ctx.translate(c.x, renderY);
+
+                    // 광채 효과
+                    ctx.shadowColor = '#fbbf24';
+                    ctx.shadowBlur = 12;
+
+                    // 입체감 있는 황금 코인 그라데이션
+                    const grad = ctx.createRadialGradient(-3, -3, 2, 0, 0, c.radius);
+                    grad.addColorStop(0, '#fef08a');
+                    grad.addColorStop(0.6, '#f59e0b');
+                    grad.addColorStop(1, '#b45309');
+
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, c.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 흰 테두리
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // "+3" 글자 표시
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#78350f';
+                    ctx.font = 'bold 13px "Jua", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('3p', 0, 1);
+
+                    ctx.restore();
+                }
+            }
+        };
+
+        const pipes = {
+            list: [],
+            width: 66,
+            gap: 210, // 기본 위아래 틈새
+            baseSpeed: 1.7,
+            speed: 1.7,
+            spawnInterval: 125, // 장애물 간 수평 간격
+
+            reset() {
+                this.list = [];
+                this.speed = this.baseSpeed;
+            },
+
+            update() {
+                // 점수 상승에 따른 속도 증가
+                this.speed = this.baseSpeed + Math.min(score * 0.08, 2.5);
+
+                const currentInterval = Math.max(85, Math.floor(125 - score * 1.0));
+
+                if (frames % currentInterval === 0) {
+                    const minGapY = 80;
+                    const maxGapY = CANVAS_HEIGHT - 150 - this.gap;
+                    const gapY = Math.floor(Math.random() * (maxGapY - minGapY + 1)) + minGapY;
+
+                    const newPipe = {
+                        x: CANVAS_WIDTH,
+                        topGapY: gapY,
+                        passed: false
+                    };
+
+                    this.list.push(newPipe);
+                    coins.spawn(newPipe, currentInterval); // 장애물과 장애물 사이 수평 빈 공간에 코인 생성
+                }
+
+                for (let i = 0; i < this.list.length; i++) {
+                    const p = this.list[i];
+                    p.x -= this.speed;
+
+                    // Score increment when successfully passing an obstacle gap
+                    if (!p.passed && p.x + this.width < bird.x) {
+                        p.passed = true;
+                        score++;
+                        scoreDisplay.textContent = score;
+                        playSound('score');
+                        createParticles(bird.x, bird.y);
+                    }
+                }
+
+                // Remove off-screen pipes
+                if (this.list.length > 0 && this.list[0].x < -this.width) {
+                    this.list.shift();
+                }
+            },
+
+            draw() {
+                for (let i = 0; i < this.list.length; i++) {
+                    const p = this.list[i];
+
+                    // Top Coral Reef Pillar
+                    this.drawCoralPillar(p.x, 0, this.width, p.topGapY, true);
+
+                    // Bottom Coral Reef Pillar
+                    const bottomPipeY = p.topGapY + this.gap;
+                    const bottomPipeHeight = CANVAS_HEIGHT - 80 - bottomPipeY;
+                    this.drawCoralPillar(p.x, bottomPipeY, this.width, bottomPipeHeight, false);
+                }
+            },
+
+            drawCoralPillar(x, y, w, h, isTop) {
+                if (h <= 0) return;
+
+                ctx.save();
+                
+                // Main Coral Pillar Gradient (Vibrant Marine Coral Pink/Orange for high visibility)
+                const grad = ctx.createLinearGradient(x, 0, x + w, 0);
+                grad.addColorStop(0, '#ff6b81');
+                grad.addColorStop(0.35, '#ff7f50');
+                grad.addColorStop(0.75, '#ff6b81');
+                grad.addColorStop(1, '#ee5253');
+
+                ctx.fillStyle = grad;
+                ctx.fillRect(x, y, w, h);
+
+                // Coral Top/Bottom Rim Cap
+                const rimHeight = 26;
+                const rimOffsetX = 5;
+                const rimY = isTop ? y + h - rimHeight : y;
+
+                ctx.fillStyle = '#ff4757';
+                ctx.fillRect(x - rimOffsetX, rimY, w + (rimOffsetX * 2), rimHeight);
+
+                // Outlines & Borders
+                ctx.strokeStyle = '#2f3542';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(x, y, w, h);
+                ctx.strokeRect(x - rimOffsetX, rimY, w + (rimOffsetX * 2), rimHeight);
+
+                // Seaweed decoration wraps
+                ctx.fillStyle = '#2ed573';
+                const seaweedY1 = isTop ? y + h * 0.3 : y + h * 0.2;
+                const seaweedY2 = isTop ? y + h * 0.7 : y + h * 0.6;
+
+                if (h > 60) {
+                    ctx.beginPath();
+                    ctx.arc(x + 12, seaweedY1, 8, 0, Math.PI * 2);
+                    ctx.arc(x + w - 12, seaweedY2, 9, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // High-contrast 3D highlight strip
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.fillRect(x + 6, y, 7, h);
+
+                ctx.restore();
+            }
+        };
+
+        const background = {
+            bubbles: [
+                { x: 50, y: 300, r: 6, speed: 0.8 },
+                { x: 120, y: 550, r: 10, speed: 1.2 },
+                { x: 230, y: 200, r: 5, speed: 0.6 },
+                { x: 310, y: 450, r: 8, speed: 1.0 },
+                { x: 380, y: 150, r: 12, speed: 1.4 }
+            ],
+            // 배경에서 헤엄쳐 지나가는 귀여운 아기 물고기들
+            bgFish: [
+                { x: 100, y: 180, speed: 0.8, size: 14, color: '#ff9ff3' },
+                { x: 280, y: 320, speed: 1.2, size: 18, color: '#feca57' },
+                { x: 400, y: 100, speed: 0.5, size: 12, color: '#54a0ff' },
+                { x: 200, y: 480, speed: 0.9, size: 15, color: '#1dd1a1' }
+            ],
+            // 바닥 장식 요소 (너무 조잡하지 않도록 개수를 정돈하고 여유롭게 배치)
+            decorations: [
+                { type: 'seaweed', x: 60, height: 42, color: '#10b981' },
+                { type: 'rock', x: 170, width: 38, height: 18 },
+                { type: 'coral', x: 280, height: 34, color: '#f43f5e', shape: 'branch' },
+                { type: 'seaweed', x: 390, height: 46, color: '#059669' },
+                { type: 'rock', x: 500, width: 32, height: 15 },
+                { type: 'starfish', x: 580, size: 10, color: '#ff6b6b' }
+            ],
+            scrollX: 0,
+            groundOffset: 0,
+            groundHeight: 80,
+            worldWidth: 620, // 반복 순환 너비
+
+            update() {
+                // Floating underwater bubbles
+                for (let b of this.bubbles) {
+                    b.y -= b.speed;
+                    b.x += Math.sin(frames * 0.03 + b.r) * 0.4;
+                    if (b.y < -20) {
+                        b.y = CANVAS_HEIGHT;
+                        b.x = Math.random() * CANVAS_WIDTH;
+                    }
+                }
+
+                // 배경 아기 물고기 헤엄치기
+                for (let f of this.bgFish) {
+                    f.x -= f.speed + (gameState === STATES.PLAYING ? pipes.speed * 0.35 : 0.2);
+                    if (f.x < -50) {
+                        f.x = CANVAS_WIDTH + 50;
+                        f.y = 70 + Math.random() * (CANVAS_HEIGHT - 220);
+                    }
+                }
+
+                // 이동 속도에 맞춘 스크롤 및 지형 연속 루프
+                if (gameState === STATES.PLAYING) {
+                    this.scrollX += pipes.speed;
+                    this.groundOffset = (this.groundOffset + pipes.speed) % this.worldWidth;
+                } else {
+                    this.scrollX += 0.5;
+                    this.groundOffset = (this.groundOffset + 0.5) % this.worldWidth;
+                }
+            },
+
+            draw() {
+                // Light & Soft Aqua Ocean Gradient (Very clear and soft for contrast)
+                const seaGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT - this.groundHeight);
+                seaGrad.addColorStop(0, '#e0f2fe');   // Bright soft cyan top
+                seaGrad.addColorStop(0.5, '#bae6fd'); // Gentle clear blue middle
+                seaGrad.addColorStop(1, '#7dd3fc');   // Soft ocean blue lower
+                ctx.fillStyle = seaGrad;
+                ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT - this.groundHeight);
+
+                // 원경 해저 언덕 실루엣 스크롤 (패럴랙스 입체감 연출)
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.28)';
+                ctx.beginPath();
+                const hillY = CANVAS_HEIGHT - this.groundHeight;
+                ctx.moveTo(0, hillY);
+                for (let x = 0; x <= CANVAS_WIDTH + 20; x += 10) {
+                    const worldX = x + this.scrollX * 0.3;
+                    const h = Math.sin(worldX * 0.01) * 22 + Math.cos(worldX * 0.02) * 14 + 38;
+                    ctx.lineTo(x, hillY - h);
+                }
+                ctx.lineTo(CANVAS_WIDTH, hillY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Subtle Underwater Sunlight Rays
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+                ctx.beginPath();
+                ctx.moveTo(30, 0);
+                ctx.lineTo(110, 0);
+                ctx.lineTo(210, CANVAS_HEIGHT - this.groundHeight);
+                ctx.lineTo(70, CANVAS_HEIGHT - this.groundHeight);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.moveTo(180, 0);
+                ctx.lineTo(270, 0);
+                ctx.lineTo(380, CANVAS_HEIGHT - this.groundHeight);
+                ctx.lineTo(260, CANVAS_HEIGHT - this.groundHeight);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw Background Swimming Fish
+                for (let f of this.bgFish) {
+                    ctx.save();
+                    ctx.translate(f.x, f.y);
+                    ctx.fillStyle = f.color;
+                    ctx.globalAlpha = 0.55;
+                    
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, f.size, f.size * 0.55, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 꼬리 지느러미
+                    ctx.beginPath();
+                    ctx.moveTo(f.size * 0.7, 0);
+                    ctx.lineTo(f.size * 1.3, -f.size * 0.5);
+                    ctx.lineTo(f.size * 1.3, f.size * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // 눈동자
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.arc(-f.size * 0.4, -f.size * 0.15, f.size * 0.18, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    ctx.restore();
+                }
+
+                // Draw Bubbles
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.lineWidth = 1.5;
+                for (let b of this.bubbles) {
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+
+                // Draw Sandy Sea Floor
+                const groundY = CANVAS_HEIGHT - this.groundHeight;
+
+                // Warm Sand Color Gradient
+                const sandGrad = ctx.createLinearGradient(0, groundY, 0, CANVAS_HEIGHT);
+                sandGrad.addColorStop(0, '#fef08a');
+                sandGrad.addColorStop(0.3, '#fde047');
+                sandGrad.addColorStop(1, '#eab308');
+
+                ctx.fillStyle = sandGrad;
+                ctx.fillRect(0, groundY, CANVAS_WIDTH, this.groundHeight);
+
+                // 바닥 장식 요소 스크롤 렌더링 (바위, 다양한 모양/색상의 산호, 흔들리는 해초, 불가사리, 조개)
+                ctx.save();
+                for (let item of this.decorations) {
+                    let screenX = (item.x - this.groundOffset) % this.worldWidth;
+                    if (screenX < -60) screenX += this.worldWidth;
+
+                    if (screenX > -60 && screenX < CANVAS_WIDTH + 60) {
+                        this.drawSeabedItem(item, screenX, groundY);
+                    }
+                }
+                ctx.restore();
+
+                // Sea floor top border
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(0, groundY);
+                ctx.lineTo(CANVAS_WIDTH, groundY);
+                ctx.stroke();
+            },
+
+            // 바닥의 다채로운 해저 장식물 그리기
+            drawSeabedItem(item, x, groundY) {
+                if (item.type === 'rock') {
+                    // 모래층과 자연스럽게 어우러지는 둥글고 정교한 해저 조약돌
+                    ctx.save();
+                    
+                    // 은은한 모래 그림자
+                    ctx.fillStyle = 'rgba(180, 83, 9, 0.25)';
+                    ctx.beginPath();
+                    ctx.ellipse(x, groundY + 2, item.width * 0.55, 4, 0, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 부드러운 입체 그라데이션
+                    const rockGrad = ctx.createLinearGradient(x - item.width / 2, groundY - item.height, x + item.width / 2, groundY);
+                    rockGrad.addColorStop(0, '#94a3b8');
+                    rockGrad.addColorStop(0.6, '#64748b');
+                    rockGrad.addColorStop(1, '#475569');
+
+                    ctx.fillStyle = rockGrad;
+                    ctx.beginPath();
+                    ctx.moveTo(x - item.width / 2, groundY + 2);
+                    ctx.bezierCurveTo(
+                        x - item.width / 2, groundY - item.height * 1.15, 
+                        x + item.width / 2, groundY - item.height * 1.15, 
+                        x + item.width / 2, groundY + 2
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+
+                    // 상단 은은한 하이라이트
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                    ctx.beginPath();
+                    ctx.ellipse(x - item.width * 0.15, groundY - item.height * 0.55, item.width * 0.2, item.height * 0.22, -0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                } else if (item.type === 'seaweed') {
+                    // 물결치는 다양한 높이의 해초
+                    ctx.fillStyle = item.color;
+                    const wave = Math.sin((frames * 0.06) + x * 0.05) * 8;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 4, groundY);
+                    ctx.quadraticCurveTo(x + wave, groundY - item.height * 0.5, x + wave * 0.6, groundY - item.height);
+                    ctx.quadraticCurveTo(x + wave - 6, groundY - item.height * 0.5, x + 4, groundY);
+                    ctx.fill();
+                } else if (item.type === 'coral') {
+                    // 화려한 분홍/주황/보라 산호
+                    ctx.fillStyle = item.color;
+                    if (item.shape === 'fan') {
+                        // 부채꼴 산호
+                        ctx.beginPath();
+                        ctx.arc(x, groundY, item.height * 0.8, Math.PI * 1.15, Math.PI * 1.85);
+                        ctx.fill();
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1;
+                        ctx.stroke();
+                    } else {
+                        // 가지형 산호
+                        ctx.beginPath();
+                        ctx.fillRect(x - 3, groundY - item.height, 6, item.height);
+                        ctx.fillRect(x - 12, groundY - item.height * 0.7, 12, 5);
+                        ctx.fillRect(x - 12, groundY - item.height * 0.85, 5, 12);
+                        ctx.fillRect(x, groundY - item.height * 0.5, 12, 5);
+                        ctx.fillRect(x + 7, groundY - item.height * 0.7, 5, 12);
+                    }
+                } else if (item.type === 'starfish') {
+                    // 모래 위의 알록달록 불가사리
+                    ctx.fillStyle = item.color;
+                    ctx.font = `${item.size * 1.8}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('⭐', x, groundY + 4);
+                } else if (item.type === 'shell') {
+                    // 해저 조개 껍데기
+                    ctx.fillStyle = item.color;
+                    ctx.font = `${item.size * 1.6}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('🐚', x, groundY + 4);
+                }
+            }
+        };
+
+        let particles = [];
+        let floatingTexts = [];
+
+        function createParticles(x, y) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    radius: Math.random() * 4 + 2,
+                    color: `hsl(${Math.random() * 50 + 40}, 100%, 60%)`,
+                    alpha: 1,
+                    life: 25
+                });
+            }
+        }
+
+        function createCoinParticles(x, y) {
+            for (let i = 0; i < 16; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8,
+                    radius: Math.random() * 4 + 3,
+                    color: `hsl(${Math.random() * 20 + 45}, 100%, 60%)`, // 황금빛 이펙트
+                    alpha: 1,
+                    life: 28
+                });
+            }
+        }
+
+        function addFloatingText(x, y, text) {
+            floatingTexts.push({
+                x: x,
+                y: y,
+                text: text,
+                alpha: 1,
+                vy: -2
+            });
+        }
+
+        function updateAndDrawFloatingTexts() {
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                const ft = floatingTexts[i];
+                ft.y += ft.vy;
+                ft.alpha -= 0.035;
+
+                if (ft.alpha <= 0) {
+                    floatingTexts.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.fillStyle = '#ffe100';
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 3;
+                ctx.font = 'bold 26px "Jua", sans-serif';
+                ctx.textAlign = 'center';
+                ctx.strokeText(ft.text, ft.x, ft.y);
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+        }
+
+        function updateAndDrawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 1 / p.life;
+
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function checkCollisions() {
+            const groundY = CANVAS_HEIGHT - background.groundHeight;
+
+            // Ground Collision
+            if (bird.y + bird.radius >= groundY) {
+                bird.y = groundY - bird.radius;
+                return true;
+            }
+
+            // Pipe Collisions (여유로운 판정 적용)
+            for (let i = 0; i < pipes.list.length; i++) {
+                const p = pipes.list[i];
+
+                // Check horizontal overlap with generous bird hitbox radius
+                if (bird.x + bird.radius - 6 > p.x && bird.x - bird.radius + 6 < p.x + pipes.width) {
+                    // Check if bird hits top or bottom pipe height
+                    if (bird.y - bird.radius + 6 < p.topGapY || bird.y + bird.radius - 6 > p.topGapY + pipes.gap) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        function triggerFlap() {
+            initAudio();
+
+            if (gameState === STATES.START) {
+                startGame();
+            } else if (gameState === STATES.PLAYING) {
+                bird.flap();
+            }
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (gameState === STATES.GAMEOVER) {
+                    // 게임 오버 화면(팝업)이 완전히 뜬 상태에서만 스페이스바로 재시작 가능
+                    if (!gameoverScreen.classList.contains('hidden')) {
+                        initAudio();
+                        startGame();
+                    }
+                } else {
+                    triggerFlap();
+                }
+            }
+        });
+
+        canvas.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            triggerFlap();
+        });
+
+        startBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            triggerFlap();
+        });
+
+        retryBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            initAudio();
+            startGame();
+        });
+
+        function startGame() {
+            // 대기 중인 게임 오버 UI 출력 타이머 취소
+            if (gameOverTimeout) {
+                clearTimeout(gameOverTimeout);
+                gameOverTimeout = null;
+            }
+
+            score = 0;
+            frames = 0;
+            scoreDisplay.textContent = '0';
+            particles = [];
+            floatingTexts = [];
+            
+            // 현재 설정된 난이도 값 재적용
+            setDifficulty(currentDifficulty);
+            
+            bird.reset();
+            pipes.reset();
+            coins.reset();
+            gameState = STATES.PLAYING;
+
+            startScreen.classList.add('hidden');
+            gameoverScreen.classList.add('hidden');
+        }
+
+        function triggerGameOver() {
+            gameState = STATES.GAMEOVER;
+            playSound('hit');
+
+            // 현재 난이도별 최고점수 갱신 및 로컬스토리지 저장
+            if (currentDifficulty === 'easy') {
+                if (score > bestScoreEasy) {
+                    bestScoreEasy = score;
+                    localStorage.setItem('flappy_birdie_best_easy', bestScoreEasy);
+                }
+            } else if (currentDifficulty === 'hard') {
+                if (score > bestScoreHard) {
+                    bestScoreHard = score;
+                    localStorage.setItem('flappy_birdie_best_hard', bestScoreHard);
+                }
+            }
+
+            finalScoreDisplay.textContent = score;
+            if (bestScoreEasyDisplay) bestScoreEasyDisplay.textContent = bestScoreEasy;
+            if (bestScoreHardDisplay) bestScoreHardDisplay.textContent = bestScoreHard;
+
+            // 바다 & 학교 테마 칭호 기준 (난이도별 차등 적용)
+            let rank = '길치 아기 멸치 🐟';
+            if (currentDifficulty === 'hard') {
+                // 어려움 모드는 점수 획득이 까다로우므로 기준을 완화
+                if (score >= 50) rank = '전설의 심해 제왕 👑';
+                else if (score >= 30) rank = '전교 1등 백상아리 🦈';
+                else if (score >= 18) rank = '쉬는시간 돌고래 🐬';
+                else if (score >= 8) rank = '아산만 잠수왕 🥽';
+            } else {
+                // 쉬움 모드 기준
+                if (score >= 80) rank = '전설의 심해 제왕 👑';
+                else if (score >= 50) rank = '전교 1등 백상아리 🦈';
+                else if (score >= 30) rank = '쉬는시간 돌고래 🐬';
+                else if (score >= 15) rank = '아산만 잠수왕 🥽';
+            }
+            
+            rankTitleDisplay.textContent = rank;
+
+            // 기존 타이머 클리어 후 안전하게 UI 표시 지연 등록
+            if (gameOverTimeout) clearTimeout(gameOverTimeout);
+            gameOverTimeout = setTimeout(() => {
+                if (gameState === STATES.GAMEOVER) {
+                    gameoverScreen.classList.remove('hidden');
+                }
+            }, 300);
+        }
+
+        function gameLoop() {
+            frames++;
+
+            // Clear Canvas
+            ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+            // Update & Render Scenery
+            background.update();
+            background.draw();
+
+            if (gameState === STATES.PLAYING) {
+                pipes.update();
+                coins.update();
+                bird.update();
+
+                if (checkCollisions()) {
+                    triggerGameOver();
+                }
+            } else if (gameState === STATES.START) {
+                // Hovering bird animation on start screen
+                bird.y = (CANVAS_HEIGHT / 2 - 20) + Math.sin(frames * 0.06) * 8;
+                bird.wingAngle += bird.wingSpeed;
+            }
+
+            pipes.draw();
+            coins.draw();
+            bird.draw();
+            updateAndDrawParticles();
+            updateAndDrawFloatingTexts();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start animation loop on window load
+        window.onload = function() {
+            setDifficulty('easy'); // 기본 난이도 초기화
+            if (bestScoreEasyDisplay) bestScoreEasyDisplay.textContent = bestScoreEasy;
+            if (bestScoreHardDisplay) bestScoreHardDisplay.textContent = bestScoreHard;
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
